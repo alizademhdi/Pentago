@@ -5,7 +5,11 @@ ROWS = 6
 COLS = 6
 
 
+
+
 class BoardUtility:
+    ROTATES = ["skip", "clockwise", "anticlockwise"]
+    REGIONS = [1, 2, 3, 4]
 
     @staticmethod
     def rotate_region(game_board, region, rotation):
@@ -116,8 +120,6 @@ class BoardUtility:
             return 100_000_000_000  # player has won the game give very large score
         if BoardUtility.has_player_won(game_board, 1 if piece == 2 else 2):
             return -100_000_000_000  # player has lost the game give very large negative score
-
-        # todo score the game board based on a heuristic.
 
         return score
 

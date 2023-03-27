@@ -1,4 +1,5 @@
 from Board import BoardUtility
+import math
 import random
 
 
@@ -12,7 +13,7 @@ class Player:
 
 class RandomPlayer(Player):
     def play(self, board):
-        return [random.choice(BoardUtility.get_valid_locations(board)), random.choice([1, 2, 3, 4]), random.choice(["skip", "clockwise", "anticlockwise"])]
+        return [random.choice(BoardUtility.get_valid_locations(board)), random.choice(BoardUtility.REGIONS), random.choice(BoardUtility.ROTATES)]
 
 
 class HumanPlayer(Player):
@@ -27,14 +28,40 @@ class MiniMaxPlayer(Player):
         super().__init__(player_piece)
         self.depth = depth
 
-    def play(self, board):
-        row = -1
-        col = -1
-        region = -1
-        rotation = -1
-        # Todo: implement minimax algorithm
+    @staticmethod
+    def minimax(board, depth, piece, alpha, beta, is_max):
+        if BoardUtility.is_terminal_state(board) or depth == 0:
+            return BoardUtility.score_position(board, piece), None
 
-        return [[row, col], region, rotation]
+        value = -100_000_000_000 if is_max == 1 else 100_000_000_000
+        locations = BoardUtility.get_valid_locations(board)
+        move = [locations[0], 1, 'skip']
+        next_piece = 1 if piece == 2 else 1
+
+        for [row, col], region, rotation in zip(locations, BoardUtility.REGIONS, BoardUtility.ROTATES):
+            copy_of_board = board.copy()
+            BoardUtility.make_move(copy_of_board, row, col, region, rotation, piece)
+            new_value = MiniMaxPlayer.minimax(copy_of_board, depth-1, next_piece, alpha, beta, is_max * -1)[0]
+            if is_max == 1:
+                if new_value >= beta:
+                    break
+                if new_value > value:
+                    value = new_value
+                    move = [[row, col], region, rotation]
+                alpha = max(alpha, value)
+
+            else:
+                if new_value <= alpha:
+                    break
+                if new_value < value:
+                    value = new_value
+                    move = [[row, col], region, rotation]
+                beta = min(beta, value)
+        return value, move
+
+
+    def play(self, board):
+        return MiniMaxPlayer.minimax(board, self.depth, self.piece, -math.inf, math.inf, 1)[1]
 
 
 class MiniMaxProbPlayer(Player):
@@ -44,9 +71,8 @@ class MiniMaxProbPlayer(Player):
         self.prob_stochastic = prob_stochastic
 
     def play(self, board):
-        row = -1
-        col = -1
-        region = -1
-        rotation = -1
-        # Todo: implement minimaxProb algorithm
-        return [[row, col], region, rotation]
+        if random.random() <= self.prob_stochastic:
+            return [random.choice(BoardUtility.get_valid_locations(board)), random.choice(BoardUtility.REGIONS), random.choice(BoardUtility.ROTATES)]
+
+        return MiniMaxPlayer.minimax(board, self.depth, self.piece, -math.inf, math.inf, 1)[1]
+
